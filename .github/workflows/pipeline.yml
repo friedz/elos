@@ -1,14 +1,22 @@
 
 name: Build and Test elos
-runs:
-  using: 'docker'
-  image: 'ci/Dockerfile'
+on: [push]
+  #runs:
+  #  using: 'docker'
+  #  image: 'ci/Dockerfile'
 
 jobs:
   build-and-test:
-      steps:
-        - name: Build Release
-          run: ci/build.sh Release
-        - name: Build Debug
-          run: ci/build.sh Debug
+    runs-on: 'ci/Dockerfile'
+      #using: 'docker'
+      #image: 'ci/Dockerfile'
+    steps:
+      - name: Build Release
+        run: ci/build.sh Release
+      - name: Build Debug
+        run: ci/build.sh Debug
+  echo-foo:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "foo"
 
