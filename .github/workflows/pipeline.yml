@@ -1,0 +1,14 @@
+
+name: Build and Test elos
+runs:
+  using: 'docker'
+  image: 'ci/Dockerfile'
+
+jobs:
+  build-and-test:
+      steps:
+        - name: Build Release
+          run: ci/build.sh Release
+        - name: Build Debug
+          run: ci/build.sh Debug
+
