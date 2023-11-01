@@ -2,6 +2,16 @@
 #
 # create and run docker build env
 #
+PARAM=""
+IT="-it"
+for par in "$@"; do
+    case $par in
+        --ci)   IT="";;
+        *)      PARAM="$PARAM $par";;
+    esac
+done
+set -- "$PARAM"
+
 CMD_PATH="$(realpath "$(dirname "$0")")"
 BASE_DIR="$(realpath "$CMD_PATH/..")"
 . "$BASE_DIR/ci/common_names.sh"
@@ -31,11 +41,6 @@ fi
 if [ "$SSH_AUTH_SOCK" ]; then
     SSH_AGENT_SOCK=$(readlink -f $SSH_AUTH_SOCK)
     SSH_AGENT_OPTS="-v $SSH_AGENT_SOCK:/run/ssh-agent -e SSH_AUTH_SOCK=/run/ssh-agent"
-fi
-
-IT=""
-if [ -z "$PS1" ]; then
-    IT="-it"
 fi
 
 docker run --rm ${IT} $SSH_AGENT_OPTS \
