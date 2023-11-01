@@ -33,7 +33,12 @@ if [ "$SSH_AUTH_SOCK" ]; then
     SSH_AGENT_OPTS="-v $SSH_AGENT_SOCK:/run/ssh-agent -e SSH_AUTH_SOCK=/run/ssh-agent"
 fi
 
-docker run --rm -it $SSH_AGENT_OPTS \
+IT=""
+if [ -z "$PS1" ]; then
+    IT="-it"
+fi
+
+docker run --rm ${IT} $SSH_AGENT_OPTS \
     -v $BASE_DIR:/base \
     -w /base \
     -e GIT_USER_TOKEN="${GIT_USER_TOKEN}" \
