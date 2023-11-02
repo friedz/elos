@@ -2,15 +2,11 @@
 #
 # create and run docker build env
 #
-PARAM=""
 IT="-it"
-for par in "$@"; do
-    case $par in
-        --ci)   IT="";;
-        *)      PARAM="$PARAM $par";;
-    esac
-done
-set -- "$PARAM"
+if [ "${CI}" = true ]; then
+    echo "Running in CI"
+    IT=""
+fi
 
 CMD_PATH="$(realpath "$(dirname "$0")")"
 BASE_DIR="$(realpath "$CMD_PATH/..")"
