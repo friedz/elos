@@ -10,7 +10,7 @@ rm -rf $RESULT_DIR/smoketest_results
 mkdir -p $RESULT_DIR/smoketest_results
 
 
-if [ "${CI}" = true ]; then
+if [ "${CI:-false}" = true ]; then
     export SMOKETEST_TMP_DIR="${SMOKETEST_TMP_DIR:-"$(realpath "${BUILD_DIR}/tmp")"}"
 fi
 
