@@ -1,0 +1,14 @@
+
+name: Integration Tests
+on: [push]
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    container:
+      image: docker:dind
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Integration Tests
+        run: ./ci/run_integration_tests.sh Release
+
