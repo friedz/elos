@@ -1,5 +1,5 @@
 
-name: Build and Test elos
+name: Build and Test
 on: [push]
 
 jobs:
@@ -25,10 +25,6 @@ jobs:
           #  with:
           #    name: debug-build
           #    path: build/Debug/dist
-          #- name: safe cmake cache
-          #  uses: actions/cache@v3
-          #  with:
-          #    paths: build/Debug/cmake
 
   unit-test-release:
     runs-on: ubuntu-latest
@@ -50,15 +46,26 @@ jobs:
       - name: Unit Tesst (Debug)
         run: ci/docker-run.sh ci/run_utest.sh Debug
 
-  integration-tests:
+  smoke-test-release:
     runs-on: ubuntu-latest
     container:
       image: docker:dind
+    needs: [build-release]
     steps:
       - uses: actions/checkout@v4
-      - name: Run Integration Tests
-        run: ./ci/run_integration_tests.sh Release
+      - name: Run Smoke-Tests
+        run: ci/docker-run.sh ci/run_smoketests.sh Release
 
+  smoke-test-debug:
+    runs-on: ubuntu-latest
+    container:
+      image: docker:dind
+    needs: [build-debug]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Smoke-Tests
+        run: ci/docker-run.sh ci/run_smoketests.sh Debug
+ 
   code-lint:
     runs-on: ubuntu-latest
     container:
@@ -70,4 +77,3 @@ jobs:
         run:  ci/docker-run.sh ci/checklicense.sh
       - name: Lint Code
         run: ci/docker-run.sh ci/code_lint.py --ci
-
