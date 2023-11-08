@@ -1,22 +1,73 @@
 
 name: Build and Test elos
 on: [push]
-  #runs:
-  #  using: 'docker'
-  #  image: 'ci/Dockerfile'
 
 jobs:
-  build-and-test:
-    runs-on: 'ci/Dockerfile'
-      #using: 'docker'
-      #image: 'ci/Dockerfile'
-    steps:
-      - name: Build Release
-        run: ci/build.sh Release
-      - name: Build Debug
-        run: ci/build.sh Debug
-  echo-foo:
+  build-release:
     runs-on: ubuntu-latest
+    container:
+      image: docker:dind
     steps:
-      - run: echo "foo"
+      - uses: actions/checkout@v4
+      - name: Build Release
+        run: ci/docker-run.sh ci/build.sh --ci Release
+
+  build-debug:
+    runs-on: ubuntu-latest
+    container:
+      image: docker:dind
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Debug
+        run: ci/docker-run.sh ci/build.sh --ci Debug
+          #- name: save build artifacts
+          #  uses: actions/upload-artifact@v3
+          #  with:
+          #    name: debug-build
+          #    path: build/Debug/dist
+          #- name: safe cmake cache
+          #  uses: actions/cache@v3
+          #  with:
+          #    paths: build/Debug/cmake
+
+  unit-test-release:
+    runs-on: ubuntu-latest
+    container:
+      image: docker:dind
+    needs: [build-release]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit Tesst (Release)
+        run: ci/docker-run.sh ci/run_utest.sh Release
+
+  unit-test-debug:
+    runs-on: ubuntu-latest
+    container:
+      image: docker:dind
+    needs: [build-debug]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit Tesst (Debug)
+        run: ci/docker-run.sh ci/run_utest.sh Debug
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    container:
+      image: docker:dind
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Integration Tests
+        run: ./ci/run_integration_tests.sh Release
+
+  code-lint:
+    runs-on: ubuntu-latest
+    container:
+      image: docker:dind
+    needs: [build-release]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Licence
+        run:  ci/docker-run.sh ci/checklicense.sh
+      - name: Lint Code
+        run: ci/docker-run.sh ci/code_lint.py --ci
 
