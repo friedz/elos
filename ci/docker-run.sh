@@ -40,6 +40,20 @@ if [ "$SSH_AUTH_SOCK" ]; then
     SSH_AGENT_OPTS="-v $SSH_AGENT_SOCK:/run/ssh-agent -e SSH_AUTH_SOCK=/run/ssh-agent"
 fi
 
+echo ""
+echo "======== Docker run SH Info ==============="
+echo "docker run --rm ${IT} $SSH_AGENT_OPTS"
+echo "    -v $BASE_DIR:/base/elos"
+echo "    -w /base/elos"
+echo "    -e GIT_USER_TOKEN=\"${GIT_USER_TOKEN}\""
+echo "    -e IGNORE_SOURCES=\"${IGNORE_SOURCES}\""
+echo "    -e UNUSED_SOURCES=\"${UNUSED_SOURCES}\""
+echo "    --privileged"
+echo "    --device=/dev/kmsg"
+echo "    $IMAGE_NAME $*"
+echo "ls -la ${BASE_DIR} (\$BASE_DIR)"
+echo "$(ls -la $BASE_DIR)"
+echo "============================================"
 
 docker run --rm ${IT} $SSH_AGENT_OPTS \
     -v $BASE_DIR:/base \

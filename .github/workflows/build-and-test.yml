@@ -27,8 +27,26 @@ jobs:
         run: ci/docker-run.sh pwd
       - name: docker ls
         run: ci/docker-run.sh ls -la
+      - name: docker env
+        run: ci/docker-run.sh env
+      - name: pwd
+        run: pwd
       - name: ls
         run: ls -la
+      - name: env
+        run: env
+      - name: build docker container
+        uses: docker/build-push-action@v2
+        with:
+          tags: elos-build:latest
+          push: false
+          file: ci/Dockerfile
+      - name: Build Debug Docker
+        uses: addnab/docker-run-action@v3
+        with:
+          image: elos-build:latest
+          options: --rm -v ${{ github.workspace }}:/build/elos -w /base/elos
+          run: ci/build.sh --ci Debug
       - name: Build Debug
         run: ci/docker-run.sh ci/build.sh --ci Debug
       - name: save build artifacts
