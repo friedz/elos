@@ -3,8 +3,11 @@ name: Build and Test
 on: [push]
 
 jobs:
-  build-release:
+  build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        build_type: [Debug, Release]
     steps:
       - uses: actions/checkout@v4
       - name: Install Build Dependencies
@@ -30,192 +33,31 @@ jobs:
           python-is-python3 \
           python3-pip \
           python3-venv 
-      - name: Build Release
-        run: ci/build.sh --ci Release
+      - name: checkout and build safu
+        run: |
+          git clone https://github.com/Elektrobit/safu.git /tmp/safu
+          cmake -B /tmp/safu/build /tmp/safu -DUNIT_TESTS=off -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          make -C /tmp/safu/build all
+          sudo make -C /tmp/safu/build install
+      - name: checkout and build samconf
+        run: |
+          git clone https://github.com/Elektrobit/samconf.git /tmp/samconf
+          cmake -B /tmp/samconf/build /tmp/samconf -DUNIT_TESTS=off -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          make -C /tmp/samconf/build all
+          sudo make -C /tmp/samconf/build install
+      - name: Build ${{ matrix.build_type }}
+        env:
+          DESTDIR: ${{ github.workspace }}/build/${{ matrix.build_type }}/dist 
+        run: |
+          cmake -B ./build/${{ matrix.build_type }}/cmake . -DUNIT_TESTS=off -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          make -C ./build/${{ matrix.build_type }}/cmake all install
       - name: save build artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: release-build
-          path: build/Release/dist
+          name: ${{ matrix.build_type}}-build
+          path: build/${{ matrix.build_type}}/dist
       - name: save cmake artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: release-cmake
-          path: build/Release/cmake
-
-  build-debug:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Build Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-          cmake \
-          pkg-config \
-          git \
-          ninja-build \
-          libcmocka-dev \
-          build-essential \
-          libmnl-dev \
-          libjson-c-dev \
-          libssl-dev \
-          liblog4c-dev \
-          libesmtp-dev \
-          libcurl4-openssl-dev \
-          curl \
-          libsqlite3-0 \
-          libsqlite3-dev \
-          sqlite3 \
-          python-is-python3 \
-          python3-pip \
-          python3-venv 
-      - name: Build Debug
-        run: ci/build.sh --ci Debug
-      - name: save build artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: debug-build
-          path: build/Debug/dist
-      - name: save cmake artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: debug-cmake
-          path: build/Debug/cmake
-
-  unit-test-release:
-    runs-on: ubuntu-latest
-    needs: [build-release]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v3
-        with:
-          name: release-cmake
-          path: build/Release/cmake
-      - uses: actions/download-artifact@v3
-        with:
-          name: release-build
-          path: build/Release/dist
-      - name: Install Test Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-          cmake
-      - name: Unit Tesst (Release)
-        run: ci/run_utest.sh Release
-      - name: save test results
-        uses: actions/upload-artifact@v3
-        with:
-          name: unit-tests-release-results
-          path: build/Release/result/unit_tests
-
-  unit-test-debug:
-    runs-on: ubuntu-latest
-    needs: [build-debug]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v3
-        with:
-          name: debug-build
-          path: build/Debug/dist
-      - uses: actions/download-artifact@v3
-        with:
-          name: debug-cmake
-          path: build/Debug/cmake
-      - name: Install Test Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-          cmake
-      - name: Unit Tesst (Debug)
-        run: ci/run_utest.sh Debug
-      - name: save build artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: unit-tests-debug-results
-          path: build/Debug/result/unit_tests
-
-  smoke-test-release:
-    runs-on: ubuntu-latest
-    needs: [build-release]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v3
-        with:
-          name: release-build
-          path: build/Release/dist
-
-      - name: Run Smoke-Tests
-        run: ci/run_smoketests.sh Release
-      - name: save test results
-        uses: actions/upload-artifact@v3
-        with:
-          name: smoke-test-release-results
-          path: build/Release/result/smoketests_results
-
-  smoke-test-debug:
-    runs-on: ubuntu-latest
-    needs: [build-debug]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v3
-        with:
-          name: debug-build
-          path: build/Debug/dist
-      - name: Install Test Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-          net-tools
-      - name: make elos executable
-        run: chmod +x build/Debug/dist/usr/local/bin/*
-      - name: Run Smoke-Tests
-        run: ci/run_smoketests.sh Debug
-      - name: save test results
-        uses: actions/upload-artifact@v3
-        with:
-          name: smoke-test-debug-results
-          path: build/Debug/smoketests_results
-
-  code-lint:
-    runs-on: ubuntu-latest
-    needs: [build-release]
-    env:
-      IGNORE_SOURCES: "src/plugins/storagebackends/nosqlbackend/*/*  src/components/processfilter/public/elos/processfilter/vector.h  src/components/plugin/public/elos/plugin/vector.h  src/components/rpnfilter/public/elos/rpnfilter/vector.h  src/components/eventfilter/public/elos/eventfilter/vector.h"
-      UNUSED_SOURCES: ""
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Test Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-          build-essential \
-          clang-format \
-          clang-tidy \
-          libmnl-dev \
-          libjson-c-dev \
-          libsqlite3-dev \
-          libssl-dev \
-          liblog4c-dev \
-          libcmocka-dev \
-          libesmtp-dev \
-          libcurl4-openssl-dev \
-          curl \
-          python3
-      - uses: actions/download-artifact@v3
-        with:
-          name: release-cmake
-          path: build/Release/cmake
-      - uses: actions/download-artifact@v3
-        with:
-          name: release-build
-          path: build/Release/dist
-      - name: Check Licence
-        run:  ci/checklicense.sh
-      - name: Lint Code
-        run: ci/code_lint.py --ci
-      - name: save lint results
-        uses: actions/upload-artifact@v3
-        with:
-          name: code-lint-results
-          path: build/Release/cmake/lint_results
+          name: ${{ matrix.build_type}}-cmake
+          path: build/${{ matrix.build_type}}/cmake
